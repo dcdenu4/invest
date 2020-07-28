@@ -470,6 +470,38 @@ class SettingsDialog(OptionsDialog):
         self.taskgraph_n_workers.set_value(inputs.INVEST_SETTINGS.value(
             'taskgraph/n_workers', '-1'))
         self._global_opts_container.add_input(self.taskgraph_n_workers)
+        
+        # Taskgraph cache settings.
+        taskgraph_cache_values = {
+            'Current Model Workspace': '',
+            'Select Directory': '0'}
+        n_workers_values.update(dict(('%s CPUs' % n, str(n)) for n in range(
+            1, multiprocessing.cpu_count()*2)))
+        self.taskgraph_n_workers = inputs.Dropdown(
+            label='Taskgraph n_workers parameter',
+            helptext=('For models that are implemented with taskgraph, this '
+                      'is provided to the graph at creation.  The default '
+                      'value of -1 is best for most users, as this will '
+                      'eliminate the risk of deadlocks and improve the '
+                      'coherency of the logfile. Allowed values are<ul> '
+                      '<li>-1: Synchronous task execution (most reliable) </li>'
+                      '<li>0: Tasks execute in the main process, but use '
+                      'threaded task management. </li>'
+                      '<li><em>n</em>: Where <em>n</em> is a positive integer, '
+                      'taskgraph will execute tasks in <em>n</em> processes. '
+                      'This can yield a nice speedup, but incurs a risk of '
+                      'deadlock.</li>'
+                      '</ul>Regardless of this value, all models that are '
+                      'taskgraph-enabled take advantage of '
+                      'avoided recomputation. To see if a model uses '
+                      "taskgraph, take a look at the User's Guide chapter "
+                      'for the model, or inspect the source code.'),
+            options=[pair[0] for pair in sorted(
+                n_workers_values.items(), key=lambda x: int(x[1]))],
+            return_value_map=n_workers_values)
+        self.taskgraph_n_workers.set_value(inputs.INVEST_SETTINGS.value(
+            'taskgraph/n_workers', '-1'))
+        self._global_opts_container.add_input(self.taskgraph_n_workers)
 
     def postprocess(self, exitcode):
         """Save the settings from the dialog.
