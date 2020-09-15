@@ -42,18 +42,12 @@ jobs:
             fail-fast: false
             max-parallel: 4
             matrix:
-                python-version: [3.6, 3.7]
-                python-architecture: [x86, x64]
+                python-version: [3.7, 3.8]
+                python-architecture: [x64]
                 os: [windows-latest, macos-latest]
                 include:
-                    - python-version: 3.6
-                      numpy: "numpy~=1.14"
-
                     - python-version: 3.7
                       numpy: "numpy~=1.15"
-                exclude:
-                    - os: macos-latest
-                      python-architecture: x86
         steps:
             - uses: actions/checkout@v2
               with:
@@ -77,36 +71,20 @@ jobs:
                   path: data/invest-test-data
                   key: git-lfs-testdata-${{ hashfiles('Makefile') }}
 
-            - name: Set up Windows python
-              if: matrix.os == 'windows-latest'
-              uses: actions/setup-python@v1
-              with:
-                python-version: ${{ matrix.python-version }}
-                architecture: ${{ matrix.python-architecture }}
-
-            - name: Install build dependencies Windows
-              shell: bash -l {0}
-              if: matrix.os == 'windows-latest'
-              run: |
-                  python -m pip install --upgrade pip pytest setuptools toml twine ${{ matrix.numpy }}
-                  pip install $(python -c "import toml;print(' '.join(toml.load('pyproject.toml')['build-system']['requires']))")
-
-            - name: Set up MacOS python
-              if: matrix.os != 'windows-latest'
+            - name: Set python
               uses: goanpeca/setup-miniconda@v1.1.2
               with:
-                  activate-environment: mac-env
+                  activate-environment: ${{ matrix.os }}-test-env
                   auto-update-conda: true
                   python-version: ${{ matrix.python-version }}
                   channels: conda-forge
 
-            - name: Install build dependencies MacOS
-              if: matrix.os != 'windows-latest'
+            - name: Install build dependencies
               shell: bash -l {0}
               run: |
                   conda upgrade -y pip setuptools
-                  pip install toml twine ${{ matrix.numpy }}
-                  pip install $(python -c "import toml;print(' '.join(toml.load('pyproject.toml')['build-system']['requires']))")
+                  conda install toml twine ${{ matrix.numpy }}
+                  conda install $(python -c "import toml;print(' '.join(toml.load('pyproject.toml')['build-system']['requires']))")
 
             - name: Build wheel
               shell: bash -l {0}
@@ -114,17 +92,7 @@ jobs:
                   python setup.py bdist_wheel
                   python -m twine check dist/*
 
-            - name: Install runtime dependencies Windows
-              if: matrix.os == 'windows-latest'
-              shell: bash -l {0}
-              env:
-                  PIP_EXTRA_INDEX_URL: "http://pypi.naturalcapitalproject.org/simple/"
-                  PIP_TRUSTED_HOST: "pypi.naturalcapitalproject.org"
-                  PIP_PREFER_BINARY: 1
-              run: python -m pip install -r requirements.txt -r requirements-dev.txt
-
-            - name: Install runtime dependencies MacOS
-              if: matrix.os != 'windows-latest'
+            - name: Install runtime dependencies
               shell: bash -l {0}
               run: |
                   python ./scripts/convert-requirements-to-conda-yml.py requirements.txt requirements-dev.txt requirements-gui.txt > requirements-all.yml
@@ -157,11 +125,12 @@ jobs:
                   $env:GSUTIL_PATH = (Get-Command gsutil).path
 
                   # Specify which python version we want to use (it's the one we're using
-                  # in actions/setup-python).
+                  # in actions/setup-miniconda).
                   $env:CLOUDSDK_PYTHON = (Get-Command python).path
                   $env:CLOUDSDK_GSUTIL_PYTHON = (Get-Command python).path
 
-                  make GSUTIL=$env:GSUTIL_PATH deploy
+                  make -d GSUTIL=$env:GSUTIL_PATH deploy
+
 
     test-source-distribution:
         name: "Check sdist"
@@ -169,7 +138,7 @@ jobs:
         needs: check-syntax-errors
         strategy:
             matrix:
-                python-version: [3.6, 3.7]
+                python-version: [3.7]
                 python-architecture: [x64]
                 os: [windows-latest, macos-latest]
         steps:
@@ -181,7 +150,7 @@ jobs:
             - name: Set up python
               uses: goanpeca/setup-miniconda@v1.1.2
               with:
-                  activate-environment: conda-env
+                  activate-environment: source-env
                   auto-update-conda: true
                   python-version: ${{ matrix.python-version }}
                   channels: conda-forge
@@ -264,23 +233,25 @@ jobs:
                   path: ~\AppData\Local\pip\Cache
                   key: windows-py37-pipcache-sampledata-${{ hashfiles('requirements.txt') }}
 
-            - name: Set up python
-              uses: actions/setup-python@v1
+            - name: Setup python
+              uses: goanpeca/setup-miniconda@v1.1.2
               with:
+                  activate-environment: validate-env
+                  auto-update-conda: true
                   python-version: 3.7
-                  architecture: x64
+                  channels: conda-forge
 
             - name: Install dependencies
-              env:
-                  PIP_EXTRA_INDEX_URL: "http://pypi.naturalcapitalproject.org/simple/"
-                  PIP_TRUSTED_HOST: "pypi.naturalcapitalproject.org"
-                  PIP_PREFER_BINARY: 1
+              shell: bash -l {0}
               run: |
-                  python -m pip install --upgrade pip wheel pytest
-                  python -m pip install -r requirements.txt
+                  conda install pytest requests
+                  conda upgrade -y pip wheel
+                  python ./scripts/convert-requirements-to-conda-yml.py requirements.txt > requirements.yml
+                  conda env update --file requirements.yml
                   python setup.py install
 
             - name: Validate sample data
+              shell: bash -l {0}
               run: make validate_sampledata
 
     run-ui-tests:
@@ -291,8 +262,8 @@ jobs:
             fail-fast: False
             max-parallel: 4
             matrix:
-                python-version: [3.6, 3.7]
-                python-architecture: [x86, x64]
+                python-version: [3.7]
+                python-architecture: [x64]
                 os: [windows-latest]
 
         steps:
@@ -315,21 +286,23 @@ jobs:
                   key: git-lfs-testdata-${{ hashfiles('Makefile') }}
 
             - name: Set up python
-              uses: actions/setup-python@v1
+              uses: goanpeca/setup-miniconda@v1.1.2
               with:
+                  activate-environment: ui-env
+                  auto-update-conda: true
                   python-version: ${{ matrix.python-version }}
-                  architecture: ${{ matrix.python-architecture }}
+                  channels: conda-forge
 
             - name: Install dependencies
-              env:
-                  PIP_EXTRA_INDEX_URL: "http://pypi.naturalcapitalproject.org/simple/"
-                  PIP_TRUSTED_HOST: "pypi.naturalcapitalproject.org"
-                  PIP_PREFER_BINARY: 1
+              shell: bash -l {0}
               run: |
-                  python -m pip install --upgrade pip pytest setuptools
-                  python -m pip install -r requirements.txt -r requirements-dev.txt -r requirements-gui.txt
+                  conda install requests
+                  conda upgrade -y pip setuptools
+                  python ./scripts/convert-requirements-to-conda-yml.py requirements.txt requirements-dev.txt requirements-gui.txt > requirements-all.yml
+                  conda env update --file requirements-all.yml
                   python setup.py install
 
             - name: Run UI tests
+              shell: bash -l {0}
               timeout-minutes: 10  # tests usually take < 2 minutes, so 10 is generous.
               run: make test_ui
