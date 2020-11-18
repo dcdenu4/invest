@@ -28,6 +28,7 @@ ARGS_SPEC = {
         "workspace_dir": validation.WORKSPACE_SPEC,
         "results_suffix": validation.SUFFIX_SPEC,
         "n_workers": validation.N_WORKERS_SPEC,
+        "taskgraph_working_dir": validation.TASKGRAPH_DIR_SPEC,
         "lulc_cur_path": {
             "type": "raster",
             "required": True,
@@ -239,6 +240,8 @@ def execute(args):
         args['n_workers'] (int): (optional) The number of worker processes to
             use for processing this model.  If omitted, computation will take
             place in the current process.
+        args['taskgraph_working_dir'] (string): a path to a new or existing
+            TaskGraph directory. (optional)
 
     Returns:
         None
@@ -256,10 +259,15 @@ def execute(args):
     kernel_dir = os.path.join(intermediate_output_dir, 'kernels')
     utils.make_directories([intermediate_output_dir, output_dir, kernel_dir])
 
-    taskgraph_working_dir = os.path.join(
-        intermediate_output_dir, '_taskgraph_working_dir')
-
     n_workers = int(args.get('n_workers', -1))
+
+    default_taskgraph_dir = os.path.join(
+        intermediate_output_dir, '_taskgraph_working_dir')
+    taskgraph_working_dir = args.get(
+        'taskgraph_working_dir', default_taskgraph_dir)
+    if taskgraph_working_dir == "":
+        taskgraph_working_dir = default_taskgraph_dir
+
     task_graph = taskgraph.TaskGraph(taskgraph_working_dir, n_workers)
 
     LOGGER.info("Checking Threat and Sensitivity tables for compliance")

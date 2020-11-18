@@ -471,6 +471,17 @@ class SettingsDialog(OptionsDialog):
         self.taskgraph_n_workers.set_value(inputs.INVEST_SETTINGS.value(
             'taskgraph/n_workers', '-1'))
         self._global_opts_container.add_input(self.taskgraph_n_workers)
+        
+        # Taskgraph working cache directory settings.
+        self.taskgraph_cache_directory = inputs.Folder(
+            label='Taskgraph cache directory',
+            helptext=('Specify a directory to use for an existing or new'
+                      ' taskgraph cache. The default is to create a new'
+                      ' directory in the Workspace if it does not already'
+                      ' exist.'))
+        self.taskgraph_cache_directory.set_value(inputs.INVEST_SETTINGS.value(
+            'taskgraph/taskgraph_cache_directory', ''))
+        self._global_opts_container.add_input(self.taskgraph_cache_directory)
 
     def postprocess(self, exitcode):
         """Save the settings from the dialog.
@@ -496,6 +507,9 @@ class SettingsDialog(OptionsDialog):
             inputs.INVEST_SETTINGS.setValue(
                 'taskgraph/n_workers',
                 self.taskgraph_n_workers.value())
+            inputs.INVEST_SETTINGS.setValue(
+                'taskgraph/taskgraph_cache_directory',
+                self.taskgraph_cache_directory.value())
 
 
 class AboutDialog(QtWidgets.QDialog):
@@ -1621,9 +1635,16 @@ class InVESTModel(QtWidgets.QMainWindow):
             if 'n_workers' in args:
                 raise RuntimeError(
                     'n_workers defined in args. It should not be defined.')
+            if 'taskgraph_working_dir' in args:
+                raise RuntimeError(
+                    'taskgraph_working_dir defined in args. It should not be'
+                    ' defined.')
 
             args['n_workers'] = inputs.INVEST_SETTINGS.value(
                 'taskgraph/n_workers', '-1')
+            
+            args['taskgraph_working_dir'] = inputs.INVEST_SETTINGS.value(
+                'taskgraph/taskgraph_cache_directory', '')
 
             name = getattr(self, 'label', self.target.__module__)
             logfile_log_level = getattr(logging, inputs.INVEST_SETTINGS.value(

@@ -71,6 +71,18 @@ N_WORKERS_SPEC = {
     }
 }
 
+TASKGRAPH_DIR_SPEC = {
+    "name": "Taskgraph directory parameter",
+    "about": (
+        "A path to a directory to use for the TaskGraph cache. Can be an"
+        " existing TaskGraph cache directory or a path to a new directory."),
+    "type": "directory",
+    "required": False,
+    "validation_options": {
+        "permissions": "rwx"
+    }
+}
+
 
 def _evaluate_expression(expression, variable_map):
     """Evaluate a python expression.
