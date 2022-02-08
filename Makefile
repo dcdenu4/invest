@@ -34,7 +34,7 @@ ifeq ($(OS),Windows_NT)
 	# widely available on Windows now, especially through git-bash
 	SHELL := /usr/bin/bash
 	CONDA := conda.bat
-	BASHLIKE_SHELL_COMMAND := $(SHELL) -c
+	BASHLIKE_SHELL_COMMAND := "$(SHELL)" -c
 	.DEFAULT_GOAL := windows_installer
 	RM_DATA_DIR := $(RMDIR) $(DATA_DIR)
 	/ := '\'
@@ -394,7 +394,7 @@ codesign_windows:
 deploy:
 	-(cd $(INVEST_BINARIES_DIR) && $(ZIP) -r ../$(INVEST_BINARIES_DIR_ZIP) .)
 	-$(GSUTIL) -m rsync $(DIST_DIR) $(DIST_URL_BASE)
-	-$(GSUTIL) -m rsync -r $(DIST_DIR)/data $(DIST_URL_BASE)/data
+	-$(GSUTIL) -m rsync -r $(DIST_DIR)/data/ $(DIST_URL_BASE)/data
 	-$(GSUTIL) -m rsync -r $(DIST_DIR)/userguide $(DIST_URL_BASE)/userguide
 	@echo "Application binaries (if they were created) can be downloaded from:"
 	@echo "  * $(DOWNLOAD_DIR_URL)"
