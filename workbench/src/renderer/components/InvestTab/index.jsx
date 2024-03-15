@@ -15,6 +15,7 @@ import { withTranslation } from 'react-i18next';
 import ModelStatusAlert from './ModelStatusAlert';
 import SetupTab from '../SetupTab';
 import LogTab from '../LogTab';
+import InsightTab from '../InsightTab';
 import ResourcesLinks from '../ResourcesLinks';
 import { getSpec } from '../../server_requests';
 import { UI_SPEC } from '../../ui_config';
@@ -233,6 +234,10 @@ class InvestTab extends React.Component {
                 {t('Log')}
                 <MdKeyboardArrowRight />
               </Nav.Link>
+              <Nav.Link eventKey="insight" disabled={logDisabled}>
+                {t('Insight')}
+                <MdKeyboardArrowRight />
+              </Nav.Link>
             </Nav>
             <div
               className="sidebar-row sidebar-buttons"
@@ -287,6 +292,16 @@ class InvestTab extends React.Component {
               >
                 <LogTab
                   logfile={logfile}
+                  executeClicked={executeClicked}
+                  tabID={tabID}
+                />
+              </TabPane>
+              <TabPane
+                eventKey="insight"
+                aria-label="model insight tab"
+              >
+                <InsightTab
+                  workspaceDir={"Insight Workspace"}
                   executeClicked={executeClicked}
                   tabID={tabID}
                 />
